@@ -155,7 +155,7 @@ function vivo(ok) {
 $("procura").addEventListener("input", desenhar);
 
 // ---------- EM PROVA (tempo real) ----------
-let vivo = [], desvio = 0, aCarregarVivo = false, cartoes = [];
+let emProva = [], desvio = 0, aCarregarVivo = false, cartoes = [];
 const VELHO_MS = 3 * 3600 * 1000; // ignora pistas esquecidas há mais de 3 h
 
 async function sincronizarRelogio() {
@@ -183,7 +183,7 @@ async function carregarVivo() {
   aCarregarVivo = true;
   try {
     const rows = await C.listarAoVivo();
-    vivo = rows.filter(r => r.estado !== "pronto" && agoraServidor() - Date.parse(r.servidor_em) < VELHO_MS)
+    emProva = rows.filter(r => r.estado !== "pronto" && agoraServidor() - Date.parse(r.servidor_em) < VELHO_MS)
                .sort((a, b) => a.pista.localeCompare(b.pista));
     desenharVivo();
   } catch (e) {}
@@ -192,15 +192,15 @@ async function carregarVivo() {
 
 function desenharVivo() {
   const el = $("aoVivo");
-  if (!vivo.length) { el.innerHTML = '<div class="aovivo-vazio">Sem atletas em prova neste momento</div>'; cartoes = []; return; }
-  el.innerHTML = vivo.map(r => `
+  if (!emProva.length) { el.innerHTML = '<div class="aovivo-vazio">Sem atletas em prova neste momento</div>'; cartoes = []; return; }
+  el.innerHTML = emProva.map(r => `
     <div class="vivo-card ${r.estado === "parado" ? "parado" : ""}" data-p="${C.esc(r.pista)}">
       <div class="vc-topo"><span class="rec"></span>PISTA ${C.esc(r.pista)} · ${r.estado === "parado" ? "CHEGADA · A VALIDAR" : "EM PROVA"}</div>
       <div class="vc-nome">${r.atleta ? C.esc(r.atleta) : "—"}</div>
       <div class="vc-tempo">${C.fmt(decorrido(r))}</div>
       <div class="vc-pos"></div>
     </div>`).join("");
-  cartoes = [...el.querySelectorAll(".vivo-card")].map((c, i) => ({ r: vivo[i], t: c.querySelector(".vc-tempo"), p: c.querySelector(".vc-pos") }));
+  cartoes = [...el.querySelectorAll(".vivo-card")].map((c, i) => ({ r: emProva[i], t: c.querySelector(".vc-tempo"), p: c.querySelector(".vc-pos") }));
   atualizarPosicoes();
 }
 
