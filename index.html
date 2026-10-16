@@ -6,14 +6,36 @@
 <meta name="theme-color" content="#0e1116">
 <title>Ranking</title>
 <style>
-:root{--bg:#0e1116;--card:#171b22;--line:#262c36;--txt:#e9edf2;--mut:#8a94a3;--acc:#22d3ee;--ouro:#facc15;--prata:#cbd5e1;--bronze:#d97706;--ok:#22c55e;--erro:#ef4444}
+:root{--bg:#4b5320;--bg2:#3c4219;--card:rgba(0,0,0,.22);--line:rgba(255,255,255,.14);--txt:#f4f1e4;--mut:#c9c6ad;--acc:#e3cf7a;--ouro:#facc15;--prata:#e2e8f0;--bronze:#d97706;--ok:#4ade80;--erro:#f87171}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--txt);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+html{background:var(--bg)}
+body{margin:0;min-height:100vh;background:radial-gradient(ellipse at top,var(--bg) 0%,var(--bg2) 100%) fixed;color:var(--txt);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
 .wrap{max-width:900px;margin:0 auto;padding:1.2rem 1rem 2rem}
-header{display:flex;justify-content:space-between;align-items:flex-end;gap:1rem;margin-bottom:1rem}
+header{display:flex;justify-content:space-between;align-items:center;gap:1rem;margin-bottom:1rem}
+.titulo{min-width:0}
 .marca{font-size:.75rem;letter-spacing:.2em;color:var(--acc);font-weight:800}
-h1{margin:.2rem 0 0;font-size:clamp(1.5rem,5vw,2.6rem);line-height:1.1}
+h1{margin:0;font-size:clamp(1.25rem,3.6vw,2.1rem);line-height:1.15;text-wrap:balance}
+.lema{margin:.35rem 0 .55rem;font-size:clamp(1rem,2.6vw,1.45rem);font-style:italic;font-weight:600;color:var(--acc)}
+.info{display:flex;flex-wrap:wrap;align-items:center;gap:.4rem 1rem}
+.lado{display:flex;align-items:center;gap:.7rem;flex-shrink:0}
+.logo{background:#fff;border-radius:12px;padding:.35rem .5rem;display:flex;box-shadow:0 2px 10px rgba(0,0,0,.25)}
+.logo img{height:clamp(52px,11vw,84px);width:auto;display:block}
+#btnEcra{background:var(--card);border:1px solid var(--line);color:var(--txt);border-radius:10px;width:44px;height:44px;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
+#btnEcra:hover{background:rgba(0,0,0,.35)}
+#btnEcra svg{width:22px;height:22px}
+#btnEcra[hidden]{display:none}
 .vivo{display:flex;align-items:center;gap:.4rem;font-size:.8rem;color:var(--mut);white-space:nowrap}
+/* Ecrã inteiro: modo TV */
+body.ecra .wrap{max-width:none;padding:2vh 3vw}
+body.ecra #procura{display:none}
+body.ecra h1{font-size:clamp(1.8rem,3.2vw,3.2rem)}
+body.ecra .lema{font-size:clamp(1.3rem,2.2vw,2.2rem)}
+body.ecra .marca{font-size:clamp(.8rem,1.1vw,1.1rem)}
+body.ecra .logo img{height:clamp(70px,10vh,130px)}
+body.ecra td{font-size:clamp(1.3rem,2.6vw,2.6rem);padding:1.1vh .8vw}
+body.ecra th{font-size:clamp(.8rem,1.2vw,1.2rem)}
+body.ecra .pos span{width:2.4em;height:2.4em;font-size:.8em}
+body.ecra .ultimo{font-size:clamp(1rem,1.8vw,1.7rem)}
 .ponto{width:9px;height:9px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 0 rgba(34,197,94,.6);animation:pulso 2s infinite}
 .vivo.off .ponto{background:var(--erro);animation:none}
 @keyframes pulso{70%{box-shadow:0 0 0 8px rgba(34,197,94,0)}100%{box-shadow:0 0 0 0 rgba(34,197,94,0)}}
@@ -34,7 +56,8 @@ tr.p3 .pos span{background:var(--bronze);color:#111}
 .dif{color:var(--mut);font-size:.9em}
 .tent{color:var(--mut);font-size:.85em}
 tr.novo td{animation:brilho 3s ease-out}
-@keyframes brilho{0%{background:rgba(34,211,238,.35)}100%{background:transparent}}
+#procura::placeholder{color:var(--mut)}
+@keyframes brilho{0%{background:rgba(227,207,122,.45)}100%{background:transparent}}
 #vazio{color:var(--mut);text-align:center;padding:2rem 0}
 footer{margin-top:1.5rem;color:var(--mut);font-size:.75rem;text-align:center}
 @media (max-width:480px){.col-tent{display:none}}
@@ -43,8 +66,16 @@ footer{margin-top:1.5rem;color:var(--mut);font-size:.75rem;text-align:center}
 <body>
 <div class="wrap">
   <header>
-    <div><div class="marca">RANKING</div><h1 id="prova"></h1></div>
-    <div class="vivo" id="vivo"><span class="ponto"></span><span id="vivoTxt">Ao vivo</span></div>
+    <div class="titulo">
+      <h1>Centro de Competências de Treino Físico Militar</h1>
+      <div class="lema">“Prontidão Física: Supera-te”</div>
+      <div class="info"><span class="marca">RANKING · <span id="prova"></span></span>
+        <span class="vivo" id="vivo"><span class="ponto"></span><span id="vivoTxt">Ao vivo</span></span></div>
+    </div>
+    <div class="lado">
+      <button id="btnEcra" type="button" title="Ecrã inteiro" aria-label="Ecrã inteiro"></button>
+      <div class="logo"><img src="logo-exercito.png" alt="Exército Português"></div>
+    </div>
   </header>
 
   <div class="ultimo" id="ultimo" hidden></div>
@@ -65,7 +96,7 @@ footer{margin-top:1.5rem;color:var(--mut);font-size:.75rem;text-align:center}
 <script>
 const C = Crono, $ = id => document.getElementById(id);
 $("prova").textContent = C.PROVA;
-document.title = "Ranking · " + C.PROVA;
+document.title = "Ranking · " + C.PROVA + " · CCTFM";
 
 let anterior = new Map(), primeiraVez = true, ultimosTempos = [];
 let aCarregar = false, pendente = false;
@@ -112,6 +143,34 @@ function vivo(ok) {
 }
 
 $("procura").addEventListener("input", desenhar);
+
+// ---------- Ecrã inteiro ----------
+const ICON_ABRIR = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>';
+const ICON_FECHAR = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg>';
+const raiz = document.documentElement;
+const podeEcra = !!(raiz.requestFullscreen || raiz.webkitRequestFullscreen);
+function emEcra() { return !!(document.fullscreenElement || document.webkitFullscreenElement); }
+function atualizarBotao() {
+  const on = emEcra();
+  document.body.classList.toggle("ecra", on);
+  $("btnEcra").innerHTML = on ? ICON_FECHAR : ICON_ABRIR;
+  $("btnEcra").title = on ? "Sair do ecrã inteiro" : "Ecrã inteiro";
+}
+function alternarEcra() {
+  try {
+    if (emEcra()) (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+    else (raiz.requestFullscreen || raiz.webkitRequestFullscreen).call(raiz);
+  } catch (e) {}
+}
+if (podeEcra) {
+  $("btnEcra").addEventListener("click", alternarEcra);
+  document.addEventListener("fullscreenchange", atualizarBotao);
+  document.addEventListener("webkitfullscreenchange", atualizarBotao);
+  document.addEventListener("keydown", e => { if ((e.key === "f" || e.key === "F") && document.activeElement !== $("procura")) alternarEcra(); });
+  atualizarBotao();
+} else {
+  $("btnEcra").hidden = true; // ex.: iPhone não suporta ecrã inteiro em páginas web
+}
 
 if (C.DEMO) {
   window.addEventListener("storage", e => { if (e.key === C.DEMO_KEY) carregar(); });
