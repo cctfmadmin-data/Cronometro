@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#0e1116">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Cronómetro · Operador</title>
+<style>
+:root{--bg:#0e1116;--card:#171b22;--line:#262c36;--txt:#e9edf2;--mut:#8a94a3;--a:#22d3ee;--b:#f59e0b;--ok:#22c55e;--stop:#ef4444}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--txt);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+body{display:flex;flex-direction:column;height:100vh;height:100dvh;overscroll-behavior:none}
+header{display:flex;align-items:center;gap:.5rem;padding:.55rem .8rem;padding-top:max(.55rem,env(safe-area-inset-top));border-bottom:1px solid var(--line);font-size:.9rem}
+header .prova{font-weight:700;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.estado{font-size:.78rem;white-space:nowrap;color:var(--mut)}
+.estado.pend{color:var(--b)}.estado.ok{color:var(--ok)}
+header button,header a{background:var(--card);color:var(--txt);border:1px solid var(--line);border-radius:8px;padding:.4rem .65rem;font-size:.82rem;text-decoration:none;font-family:inherit}
+main{flex:1;display:flex;flex-direction:column;min-height:0}
+.pista{flex:1;display:flex;flex-direction:column;justify-content:center;gap:.8rem;padding:.8rem 1rem;border-left:6px solid var(--cor);min-height:0}
+.pista+.pista{border-top:2px solid var(--line)}
+.pista[data-p=A]{--cor:var(--a)}.pista[data-p=B]{--cor:var(--b)}
+.topo{display:flex;align-items:center;gap:.6rem}
+.etq{font-weight:800;color:var(--cor);font-size:.8rem;letter-spacing:.08em;white-space:nowrap}
+.topo input{flex:1;min-width:0;background:var(--card);border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:.65rem .8rem;font-size:1.05rem;font-family:inherit}
+.topo input:focus{outline:2px solid var(--cor);border-color:transparent}
+.tempo{font-variant-numeric:tabular-nums;font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-weight:700;font-size:clamp(2.6rem,14vw,5.5rem);text-align:center;line-height:1;letter-spacing:-.02em}
+.pista.a_correr .tempo{color:var(--cor)}
+.pista.parado .tempo{color:#fff}
+.acoes{display:flex;gap:.6rem}
+.acoes button{flex:1;border:0;border-radius:14px;font-size:1.25rem;font-weight:800;padding:1.15rem 0;letter-spacing:.05em;color:#0b0d10;touch-action:manipulation;user-select:none;-webkit-user-select:none;font-family:inherit}
+.b-iniciar{background:var(--ok)}
+.b-parar{background:var(--stop);color:#fff!important}
+.b-guardar{background:var(--cor)}
+.b-descartar{background:var(--card)!important;color:var(--txt)!important;border:1px solid var(--line)!important;flex:.55!important;font-size:1rem!important}
+@media (orientation:landscape) and (max-height:600px){
+  main{flex-direction:row}
+  .pista+.pista{border-top:0}
+  .tempo{font-size:clamp(2.2rem,8vw,4.5rem)}
+  .acoes button{padding:.85rem 0}
+}
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.65);display:flex;align-items:center;justify-content:center;padding:1rem;z-index:10}
+.ov[hidden]{display:none}
+.caixa{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:1.2rem;width:100%;max-width:340px}
+.caixa.larga{max-width:520px;max-height:85vh;display:flex;flex-direction:column}
+.caixa h2{margin:0 0 .8rem;font-size:1.1rem}
+.caixa input{width:100%;font-size:1.6rem;text-align:center;letter-spacing:.3em;padding:.6rem;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--txt)}
+.caixa form button{width:100%;margin-top:.8rem;padding:.8rem;border:0;border-radius:10px;background:var(--ok);font-weight:800;font-size:1rem}
+.erro{color:var(--stop);min-height:1.2em;margin:.5rem 0 0;font-size:.9rem}
+.cab{display:flex;justify-content:space-between;align-items:center}
+.cab button{background:none;border:1px solid var(--line);color:var(--txt);border-radius:8px;padding:.35rem .7rem}
+#lista{list-style:none;margin:0;padding:0;overflow:auto}
+#lista li{display:flex;align-items:center;gap:.6rem;padding:.6rem 0;border-bottom:1px solid var(--line)}
+#lista .n{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#lista .t{font-family:ui-monospace,Menlo,monospace;font-variant-numeric:tabular-nums}
+#lista .pend{font-size:.7rem;color:var(--b);border:1px solid var(--b);border-radius:6px;padding:0 .3rem}
+#lista button{background:none;border:1px solid var(--line);color:var(--stop);border-radius:8px;padding:.3rem .55rem}
+#lista .vazio{color:var(--mut);justify-content:center}
+.toast{position:fixed;left:50%;bottom:max(1rem,env(safe-area-inset-bottom));transform:translateX(-50%) translateY(150%);background:#fff;color:#0b0d10;padding:.7rem 1rem;border-radius:12px;font-weight:600;transition:transform .25s;z-index:20;max-width:92vw;text-align:center}
+.toast.on{transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+<header>
+  <span class="prova" id="nomeProva"></span>
+  <span class="estado" id="estado"></span>
+  <button id="btnReg" type="button">Registos</button>
+  <a id="lnkRanking" target="_blank">Ranking</a>
+</header>
+
+<main>
+  <section class="pista" data-p="A"></section>
+  <section class="pista" data-p="B"></section>
+</main>
+
+<datalist id="atletas"></datalist>
+
+<div class="ov" id="ovPin" hidden>
+  <form class="caixa" id="fPin">
+    <h2>PIN do operador</h2>
+    <input id="iPin" type="password" inputmode="numeric" autocomplete="off">
+    <p class="erro" id="ePin"></p>
+    <button type="submit">Entrar</button>
+  </form>
+</div>
+
+<div class="ov" id="ovReg" hidden>
+  <div class="caixa larga">
+    <div class="cab"><h2>Últimos registos</h2><button id="fecharReg" type="button">Fechar</button></div>
+    <ul id="lista"></ul>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script src="comum.js"></script>
+<script>
+const C = Crono, FILA = "crono_fila", PIN_KEY = "crono_pin";
+const $ = id => document.getElementById(id);
+let pin = C.store.get(PIN_KEY, "");
+
+$("nomeProva").textContent = C.PROVA;
+$("lnkRanking").href = "index.html?prova=" + encodeURIComponent(C.PROVA);
+
+// ---------- Estado das duas pistas (sobrevive a recarregar a página) ----------
+const pistas = {}, ui = {};
+["A", "B"].forEach(id => {
+  pistas[id] = Object.assign({ nome: "", estado: "pronto", inicio: 0, fim: 0 }, C.store.get("crono_pista_" + id, {}));
+  montar(id);
+});
+function guardarEstado(id) { C.store.set("crono_pista_" + id, pistas[id]); }
+
+function montar(id) {
+  const el = document.querySelector(`.pista[data-p="${id}"]`);
+  el.innerHTML = `<div class="topo"><span class="etq">PISTA ${id}</span>
+    <input list="atletas" placeholder="Nome do atleta" autocomplete="off" autocapitalize="words" enterkeyhint="done"></div>
+    <div class="tempo">00:00.000</div><div class="acoes"></div>`;
+  ui[id] = { el, inp: el.querySelector("input"), tempo: el.querySelector(".tempo"), acoes: el.querySelector(".acoes") };
+  ui[id].inp.value = pistas[id].nome;
+  ui[id].inp.addEventListener("input", () => { pistas[id].nome = ui[id].inp.value; guardarEstado(id); });
+  ui[id].inp.addEventListener("keydown", e => { if (e.key === "Enter") ui[id].inp.blur(); });
+  render(id);
+}
+
+function render(id) {
+  const p = pistas[id], u = ui[id];
+  u.el.className = "pista " + p.estado;
+  if (p.estado === "pronto") {
+    u.acoes.innerHTML = '<button class="b-iniciar" data-a="iniciar" type="button">INICIAR</button>';
+    u.tempo.textContent = "00:00.000";
+  } else if (p.estado === "a_correr") {
+    u.acoes.innerHTML = '<button class="b-parar" data-a="parar" type="button">PARAR</button>';
+  } else {
+    u.acoes.innerHTML = '<button class="b-descartar" data-a="descartar" type="button">Descartar</button>' +
+                        '<button class="b-guardar" data-a="guardar" type="button">GUARDAR</button>';
+    u.tempo.textContent = C.fmt(p.fim - p.inicio);
+  }
+}
+
+// INICIAR / PARAR reagem ao toque (pointerdown) para não perder milissegundos
+document.querySelector("main").addEventListener("pointerdown", e => {
+  const agora = Date.now();
+  const b = e.target.closest("button[data-a]");
+  if (!b || (b.dataset.a !== "iniciar" && b.dataset.a !== "parar")) return;
+  e.preventDefault();
+  if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+  acao(b.closest(".pista").dataset.p, b.dataset.a, agora);
+});
+document.querySelector("main").addEventListener("click", e => {
+  const b = e.target.closest("button[data-a]");
+  if (!b || (b.dataset.a !== "guardar" && b.dataset.a !== "descartar")) return;
+  acao(b.closest(".pista").dataset.p, b.dataset.a, Date.now());
+});
+
+function acao(id, a, agora) {
+  const p = pistas[id];
+  if (a === "iniciar" && p.estado === "pronto") {
+    p.inicio = agora; p.fim = 0; p.estado = "a_correr"; vibrar(30);
+  } else if (a === "parar" && p.estado === "a_correr") {
+    p.fim = agora; p.estado = "parado"; vibrar([40, 40, 40]);
+  } else if (a === "guardar" && p.estado === "parado") {
+    if (agora - p.fim < 400) return; // evita guardar por toque acidental logo após PARAR
+    const nome = p.nome.trim().replace(/\s+/g, " ");
+    if (!nome) { toast("Escreve o nome do atleta da Pista " + id); ui[id].inp.focus(); return; }
+    const tempo_ms = p.fim - p.inicio;
+    const fila = C.store.get(FILA, []);
+    fila.push({ client_id: C.uuid(), prova: C.PROVA, atleta: nome, tempo_ms });
+    C.store.set(FILA, fila);
+    juntarNome(nome);
+    toast(`Guardado: ${nome} — ${C.fmt(tempo_ms)}`);
+    limpar(id);
+    enviarFila();
+  } else if (a === "descartar" && p.estado === "parado") {
+    if (agora - p.fim < 400) return;
+    if (!confirm("Descartar este tempo?")) return;
+    limpar(id);
+  } else return;
+  guardarEstado(id); render(id);
+}
+
+function limpar(id) {
+  Object.assign(pistas[id], { nome: "", estado: "pronto", inicio: 0, fim: 0 });
+  ui[id].inp.value = "";
+  guardarEstado(id); render(id);
+}
+
+// Atualização do mostrador (baseado na hora de início: não se perde se o ecrã bloquear)
+(function tick() {
+  const agora = Date.now();
+  for (const id in pistas) if (pistas[id].estado === "a_correr") ui[id].tempo.textContent = C.fmt(agora - pistas[id].inicio);
+  requestAnimationFrame(tick);
+})();
+
+// ---------- Envio (com fila para quando não há rede) ----------
+let aEnviar = false;
+async function enviarFila() {
+  if (aEnviar) return;
+  if (!C.DEMO && !pin) { pedirPin(); return; }
+  aEnviar = true;
+  try {
+    let fila;
+    while ((fila = C.store.get(FILA, [])).length) {
+      const r = fila[0];
+      if (C.DEMO) {
+        const todos = C.store.get(C.DEMO_KEY, []);
+        if (!todos.some(t => t.client_id === r.client_id))
+          todos.push({ id: Date.now() + Math.random(), prova: r.prova, atleta: r.atleta, tempo_ms: r.tempo_ms, criado_em: new Date().toISOString(), client_id: r.client_id });
+        C.store.set(C.DEMO_KEY, todos);
+      } else {
+        const { error } = await C.sb.rpc("registar_tempo", {
+          p_pin: pin, p_prova: r.prova, p_atleta: r.atleta, p_tempo_ms: r.tempo_ms, p_client_id: r.client_id
+        });
+        if (error) {
+          if (/PIN/i.test(error.message)) { pin = ""; C.store.set(PIN_KEY, ""); pedirPin(); }
+          throw error;
+        }
+      }
+      C.store.set(FILA, C.store.get(FILA, []).filter(x => x.client_id !== r.client_id));
+    }
+  } catch (e) { /* fica na fila e volta a tentar */ }
+  finally { aEnviar = false; atualizarEstado(); }
+}
+
+function atualizarEstado() {
+  const n = C.store.get(FILA, []).length, el = $("estado");
+  if (C.DEMO) { el.textContent = "MODO DEMO"; el.className = "estado pend"; return; }
+  if (n) { el.textContent = `● ${n} por enviar${navigator.onLine ? "" : " · sem rede"}`; el.className = "estado pend"; }
+  else if (!navigator.onLine) { el.textContent = "● Sem rede"; el.className = "estado pend"; }
+  else { el.textContent = "● Tudo enviado"; el.className = "estado ok"; }
+}
+window.addEventListener("online", enviarFila);
+window.addEventListener("offline", atualizarEstado);
+setInterval(enviarFila, 15000);
+
+// ---------- PIN ----------
+function pedirPin() { $("ovPin").hidden = false; setTimeout(() => $("iPin").focus(), 50); }
+$("fPin").addEventListener("submit", async e => {
+  e.preventDefault();
+  const v = $("iPin").value.trim();
+  $("ePin").textContent = "A verificar…";
+  const { data, error } = await C.sb.rpc("verificar_pin", { p_pin: v });
+  if (error) { $("ePin").textContent = "Sem ligação ao servidor. Tenta de novo."; return; }
+  if (!data) { $("ePin").textContent = "PIN incorreto."; return; }
+  pin = v; C.store.set(PIN_KEY, v);
+  $("ePin").textContent = ""; $("iPin").value = ""; $("ovPin").hidden = true;
+  enviarFila();
+});
+
+// ---------- Sugestões de nomes ----------
+const nomes = new Map();
+function juntarNome(n) {
+  const k = C.norm(n);
+  if (nomes.has(k)) return;
+  nomes.set(k, n);
+  const o = document.createElement("option"); o.value = n; $("atletas").appendChild(o);
+}
+async function carregarNomes() { try { (await C.listarTempos()).forEach(t => juntarNome(t.atleta)); } catch (e) {} }
+
+// ---------- Últimos registos (para corrigir enganos) ----------
+async function abrirRegistos() {
+  $("ovReg").hidden = false;
+  const lista = $("lista");
+  lista.innerHTML = '<li class="vazio">A carregar…</li>';
+  const pend = C.store.get(FILA, []);
+  let tempos = [];
+  try { tempos = (await C.listarTempos()).slice().sort((a, b) => (a.criado_em < b.criado_em ? 1 : -1)).slice(0, 25); }
+  catch (e) { toast("Sem ligação — a mostrar só os pendentes"); }
+  const linhas = [
+    ...pend.slice().reverse().map(r => `<li><span class="n">${C.esc(r.atleta)}</span><span class="pend">pendente</span><span class="t">${C.fmt(r.tempo_ms)}</span><button data-pend="${r.client_id}" type="button">Apagar</button></li>`),
+    ...tempos.map(t => `<li><span class="n">${C.esc(t.atleta)}</span><span class="t">${C.fmt(t.tempo_ms)}</span><button data-id="${t.id}" type="button">Apagar</button></li>`)
+  ];
+  lista.innerHTML = linhas.length ? linhas.join("") : '<li class="vazio">Sem registos nesta prova.</li>';
+}
+$("lista").addEventListener("click", async e => {
+  const b = e.target.closest("button"); if (!b) return;
+  if (!confirm("Apagar este registo?")) return;
+  if (b.dataset.pend) {
+    C.store.set(FILA, C.store.get(FILA, []).filter(x => x.client_id !== b.dataset.pend));
+  } else if (C.DEMO) {
+    C.store.set(C.DEMO_KEY, C.store.get(C.DEMO_KEY, []).filter(t => String(t.id) !== b.dataset.id));
+  } else {
+    const { error } = await C.sb.rpc("apagar_tempo", { p_pin: pin, p_id: Number(b.dataset.id) });
+    if (error) { toast("Não foi possível apagar: " + error.message); return; }
+  }
+  atualizarEstado(); abrirRegistos();
+});
+$("btnReg").addEventListener("click", abrirRegistos);
+$("fecharReg").addEventListener("click", () => $("ovReg").hidden = true);
+
+// ---------- Utilitários ----------
+let tTimer;
+function toast(msg) {
+  const t = $("toast"); t.textContent = msg; t.classList.add("on");
+  clearTimeout(tTimer); tTimer = setTimeout(() => t.classList.remove("on"), 2200);
+}
+function vibrar(p) { try { navigator.vibrate && navigator.vibrate(p); } catch (e) {} }
+
+// Manter o ecrã ligado durante a prova
+let wl = null;
+async function manterEcra() {
+  try {
+    if ("wakeLock" in navigator && document.visibilityState === "visible" && !wl) {
+      wl = await navigator.wakeLock.request("screen");
+      wl.addEventListener("release", () => { wl = null; });
+    }
+  } catch (e) {}
+}
+document.addEventListener("visibilitychange", manterEcra);
+document.addEventListener("pointerdown", manterEcra);
+
+// Arranque
+atualizarEstado();
+carregarNomes();
+if (!C.DEMO && !pin) pedirPin(); else enviarFila();
+</script>
+</body>
+</html>

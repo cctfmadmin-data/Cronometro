@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0e1116">
+<title>Ranking</title>
+<style>
+:root{--bg:#0e1116;--card:#171b22;--line:#262c36;--txt:#e9edf2;--mut:#8a94a3;--acc:#22d3ee;--ouro:#facc15;--prata:#cbd5e1;--bronze:#d97706;--ok:#22c55e;--erro:#ef4444}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--txt);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.wrap{max-width:900px;margin:0 auto;padding:1.2rem 1rem 2rem}
+header{display:flex;justify-content:space-between;align-items:flex-end;gap:1rem;margin-bottom:1rem}
+.marca{font-size:.75rem;letter-spacing:.2em;color:var(--acc);font-weight:800}
+h1{margin:.2rem 0 0;font-size:clamp(1.5rem,5vw,2.6rem);line-height:1.1}
+.vivo{display:flex;align-items:center;gap:.4rem;font-size:.8rem;color:var(--mut);white-space:nowrap}
+.ponto{width:9px;height:9px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 0 rgba(34,197,94,.6);animation:pulso 2s infinite}
+.vivo.off .ponto{background:var(--erro);animation:none}
+@keyframes pulso{70%{box-shadow:0 0 0 8px rgba(34,197,94,0)}100%{box-shadow:0 0 0 0 rgba(34,197,94,0)}}
+.ultimo{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--acc);border-radius:10px;padding:.6rem .9rem;margin-bottom:.9rem;font-size:.95rem}
+.ultimo b{font-family:ui-monospace,Menlo,monospace;font-variant-numeric:tabular-nums}
+.ultimo[hidden]{display:none}
+#procura{width:100%;background:var(--card);border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:.7rem .9rem;font-size:1rem;margin-bottom:.8rem;font-family:inherit}
+table{width:100%;border-collapse:collapse}
+th{font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:var(--mut);text-align:left;padding:.5rem .6rem;border-bottom:1px solid var(--line)}
+td{padding:.75rem .6rem;border-bottom:1px solid var(--line);font-size:clamp(1rem,2.6vw,1.35rem)}
+.num{text-align:right;font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-variant-numeric:tabular-nums;white-space:nowrap}
+.pos{width:3.2rem}
+.pos span{display:inline-flex;align-items:center;justify-content:center;width:2.1rem;height:2.1rem;border-radius:50%;background:var(--card);font-weight:800;font-size:.95rem}
+tr.p1 .pos span{background:var(--ouro);color:#111}
+tr.p2 .pos span{background:var(--prata);color:#111}
+tr.p3 .pos span{background:var(--bronze);color:#111}
+.nome{font-weight:600;word-break:break-word}
+.dif{color:var(--mut);font-size:.9em}
+.tent{color:var(--mut);font-size:.85em}
+tr.novo td{animation:brilho 3s ease-out}
+@keyframes brilho{0%{background:rgba(34,211,238,.35)}100%{background:transparent}}
+#vazio{color:var(--mut);text-align:center;padding:2rem 0}
+footer{margin-top:1.5rem;color:var(--mut);font-size:.75rem;text-align:center}
+@media (max-width:480px){.col-tent{display:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div><div class="marca">RANKING</div><h1 id="prova"></h1></div>
+    <div class="vivo" id="vivo"><span class="ponto"></span><span id="vivoTxt">Ao vivo</span></div>
+  </header>
+
+  <div class="ultimo" id="ultimo" hidden></div>
+  <input id="procura" type="search" placeholder="Procurar atleta…" autocomplete="off">
+
+  <table>
+    <thead><tr><th class="pos">#</th><th>Atleta</th><th class="num">Tempo</th><th class="num">Dif.</th><th class="num col-tent">Tent.</th></tr></thead>
+    <tbody id="corpo"></tbody>
+  </table>
+  <p id="vazio" hidden>Ainda não há tempos registados.</p>
+
+  <footer>Melhor tempo de cada atleta · mais rápido = melhor · atualizado às <span id="hora">—</span></footer>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script src="comum.js"></script>
+<script>
+const C = Crono, $ = id => document.getElementById(id);
+$("prova").textContent = C.PROVA;
+document.title = "Ranking · " + C.PROVA;
+
+let anterior = new Map(), primeiraVez = true, ultimosTempos = [];
+let aCarregar = false, pendente = false;
+
+async function carregar() {
+  if (aCarregar) { pendente = true; return; }
+  aCarregar = true;
+  try { ultimosTempos = await C.listarTempos(); desenhar(); vivo(true); }
+  catch (e) { vivo(false); }
+  finally { aCarregar = false; if (pendente) { pendente = false; carregar(); } }
+}
+
+function desenhar() {
+  const ranking = C.calcularRanking(ultimosTempos);
+  const filtro = C.norm($("procura").value || "");
+  const lider = ranking.length ? ranking[0].melhor : 0;
+
+  const linhas = ranking.filter(r => !filtro || r.chave.includes(filtro)).map(r => {
+    const novo = !primeiraVez && anterior.get(r.chave) !== r.melhor;
+    const d = r.melhor - lider;
+    const dif = r.pos === 1 ? "—" : "+" + (d < 60000 ? (d / 1000).toFixed(3) : C.fmt(d));
+    const cls = [r.pos <= 3 ? "p" + r.pos : "", novo ? "novo" : ""].join(" ");
+    return `<tr class="${cls}"><td class="pos"><span>${r.pos}</span></td><td class="nome">${C.esc(r.atleta)}</td>
+      <td class="num">${C.fmt(r.melhor)}</td><td class="num dif">${dif}</td><td class="num tent col-tent">${r.tentativas}</td></tr>`;
+  });
+  $("corpo").innerHTML = linhas.join("");
+  $("vazio").hidden = ranking.length > 0;
+
+  anterior = new Map(ranking.map(r => [r.chave, r.melhor]));
+  primeiraVez = false;
+
+  const ult = ultimosTempos.slice().sort((a, b) => (a.criado_em < b.criado_em ? 1 : -1))[0];
+  if (ult) {
+    $("ultimo").hidden = false;
+    $("ultimo").innerHTML = `Último registo: <strong>${C.esc(ult.atleta)}</strong> — <b>${C.fmt(ult.tempo_ms)}</b>`;
+  } else $("ultimo").hidden = true;
+
+  $("hora").textContent = new Date().toLocaleTimeString("pt-PT");
+}
+
+function vivo(ok) {
+  $("vivo").classList.toggle("off", !ok);
+  $("vivoTxt").textContent = ok ? (C.DEMO ? "Modo demo" : "Ao vivo") : "Sem ligação";
+}
+
+$("procura").addEventListener("input", desenhar);
+
+if (C.DEMO) {
+  window.addEventListener("storage", e => { if (e.key === C.DEMO_KEY) carregar(); });
+  setInterval(carregar, 3000);
+} else {
+  // Atualização em tempo real + verificação de segurança a cada 30 s
+  C.sb.channel("tempos-" + C.PROVA)
+    .on("postgres_changes", { event: "*", schema: "public", table: "tempos" }, () => carregar())
+    .subscribe();
+  setInterval(carregar, 30000);
+}
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") carregar(); });
+carregar();
+</script>
+</body>
+</html>
