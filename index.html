@@ -35,13 +35,28 @@ body.ecra .logo img{height:clamp(70px,10vh,130px)}
 body.ecra td{font-size:clamp(1.3rem,2.6vw,2.6rem);padding:1.1vh .8vw}
 body.ecra th{font-size:clamp(.8rem,1.2vw,1.2rem)}
 body.ecra .pos span{width:2.4em;height:2.4em;font-size:.8em}
-body.ecra .ultimo{font-size:clamp(1rem,1.8vw,1.7rem)}
+body.ecra .vc-nome{font-size:clamp(1.5rem,2.4vw,2.6rem)}
+body.ecra .vc-tempo{font-size:clamp(3rem,5.5vw,6rem)}
+body.ecra .vc-topo{font-size:clamp(.8rem,1.1vw,1.1rem)}
+body.ecra .vc-pos{font-size:clamp(1rem,1.4vw,1.5rem)}
+body.ecra .aovivo-vazio{font-size:clamp(1rem,1.4vw,1.4rem)}
 .ponto{width:9px;height:9px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 0 rgba(34,197,94,.6);animation:pulso 2s infinite}
 .vivo.off .ponto{background:var(--erro);animation:none}
 @keyframes pulso{70%{box-shadow:0 0 0 8px rgba(34,197,94,0)}100%{box-shadow:0 0 0 0 rgba(34,197,94,0)}}
-.ultimo{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--acc);border-radius:10px;padding:.6rem .9rem;margin-bottom:.9rem;font-size:.95rem}
-.ultimo b{font-family:ui-monospace,Menlo,monospace;font-variant-numeric:tabular-nums}
-.ultimo[hidden]{display:none}
+/* Em prova (tempo real) */
+.aovivo{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:.8rem;margin-bottom:1rem}
+.vivo-card{background:rgba(0,0,0,.3);border:1px solid var(--line);border-left:6px solid var(--cor);border-radius:14px;padding:.8rem 1rem}
+.vivo-card[data-p=A]{--cor:#22d3ee}.vivo-card[data-p=B]{--cor:#f59e0b}
+.vc-topo{display:flex;align-items:center;gap:.5rem;font-size:.72rem;font-weight:800;letter-spacing:.12em;color:var(--cor)}
+.vc-topo .rec{width:9px;height:9px;border-radius:50%;background:#ef4444;animation:piscar 1s infinite}
+.vivo-card.parado .rec{background:var(--acc);animation:none}
+@keyframes piscar{50%{opacity:.25}}
+.vc-nome{font-size:clamp(1.15rem,3vw,1.6rem);font-weight:700;margin:.3rem 0 .15rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.vc-tempo{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-variant-numeric:tabular-nums;font-weight:700;font-size:clamp(2.2rem,8vw,3.4rem);line-height:1.05;color:#fff}
+.vivo-card.parado .vc-tempo{color:var(--acc)}
+.vc-pos{font-size:.85rem;color:var(--mut);margin-top:.25rem;min-height:1.2em}
+.vc-pos b{color:var(--txt)}
+.aovivo-vazio{color:var(--mut);font-size:.9rem;border:1px dashed var(--line);border-radius:12px;padding:.7rem 1rem;text-align:center}
 #procura{width:100%;background:var(--card);border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:.7rem .9rem;font-size:1rem;margin-bottom:.8rem;font-family:inherit}
 table{width:100%;border-collapse:collapse}
 th{font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:var(--mut);text-align:left;padding:.5rem .6rem;border-bottom:1px solid var(--line)}
@@ -78,7 +93,7 @@ footer{margin-top:1.5rem;color:var(--mut);font-size:.75rem;text-align:center}
     </div>
   </header>
 
-  <div class="ultimo" id="ultimo" hidden></div>
+  <section class="aovivo" id="aoVivo"></section>
   <input id="procura" type="search" placeholder="Procurar atleta…" autocomplete="off">
 
   <table>
@@ -98,7 +113,7 @@ const C = Crono, $ = id => document.getElementById(id);
 $("prova").textContent = C.PROVA;
 document.title = "Ranking · " + C.PROVA + " · CCTFM";
 
-let anterior = new Map(), primeiraVez = true, ultimosTempos = [];
+let anterior = new Map(), primeiraVez = true, ultimosTempos = [], rankingAtual = [];
 let aCarregar = false, pendente = false;
 
 async function carregar() {
@@ -127,12 +142,7 @@ function desenhar() {
 
   anterior = new Map(ranking.map(r => [r.chave, r.melhor]));
   primeiraVez = false;
-
-  const ult = ultimosTempos.slice().sort((a, b) => (a.criado_em < b.criado_em ? 1 : -1))[0];
-  if (ult) {
-    $("ultimo").hidden = false;
-    $("ultimo").innerHTML = `Último registo: <strong>${C.esc(ult.atleta)}</strong> — <b>${C.fmt(ult.tempo_ms)}</b>`;
-  } else $("ultimo").hidden = true;
+  rankingAtual = ranking;
 
   $("hora").textContent = new Date().toLocaleTimeString("pt-PT");
 }
@@ -143,6 +153,70 @@ function vivo(ok) {
 }
 
 $("procura").addEventListener("input", desenhar);
+
+// ---------- EM PROVA (tempo real) ----------
+let vivo = [], desvio = 0, aCarregarVivo = false, cartoes = [];
+const VELHO_MS = 3 * 3600 * 1000; // ignora pistas esquecidas há mais de 3 h
+
+async function sincronizarRelogio() {
+  if (C.DEMO) return;
+  try {
+    const t0 = Date.now();
+    const { data, error } = await C.sb.rpc("agora_ms");
+    const t1 = Date.now();
+    if (!error && data) desvio = Number(data) - (t0 + t1) / 2;
+  } catch (e) {}
+}
+function agoraServidor() { return Date.now() + desvio; }
+function decorrido(r) {
+  if (r.estado !== "a_correr") return r.decorrido_ms;
+  return r.decorrido_ms + Math.max(0, agoraServidor() - Date.parse(r.servidor_em));
+}
+function posicaoProvisoria(ms) {
+  let n = 1;
+  for (const r of rankingAtual) { if (r.melhor < ms) n++; else break; }
+  return n;
+}
+
+async function carregarVivo() {
+  if (aCarregarVivo) return;
+  aCarregarVivo = true;
+  try {
+    const rows = await C.listarAoVivo();
+    vivo = rows.filter(r => r.estado !== "pronto" && agoraServidor() - Date.parse(r.servidor_em) < VELHO_MS)
+               .sort((a, b) => a.pista.localeCompare(b.pista));
+    desenharVivo();
+  } catch (e) {}
+  finally { aCarregarVivo = false; }
+}
+
+function desenharVivo() {
+  const el = $("aoVivo");
+  if (!vivo.length) { el.innerHTML = '<div class="aovivo-vazio">Sem atletas em prova neste momento</div>'; cartoes = []; return; }
+  el.innerHTML = vivo.map(r => `
+    <div class="vivo-card ${r.estado === "parado" ? "parado" : ""}" data-p="${C.esc(r.pista)}">
+      <div class="vc-topo"><span class="rec"></span>PISTA ${C.esc(r.pista)} · ${r.estado === "parado" ? "CHEGADA · A VALIDAR" : "EM PROVA"}</div>
+      <div class="vc-nome">${r.atleta ? C.esc(r.atleta) : "—"}</div>
+      <div class="vc-tempo">${C.fmt(decorrido(r))}</div>
+      <div class="vc-pos"></div>
+    </div>`).join("");
+  cartoes = [...el.querySelectorAll(".vivo-card")].map((c, i) => ({ r: vivo[i], t: c.querySelector(".vc-tempo"), p: c.querySelector(".vc-pos") }));
+  atualizarPosicoes();
+}
+
+function atualizarPosicoes() {
+  for (const c of cartoes) {
+    const ms = decorrido(c.r);
+    c.p.innerHTML = rankingAtual.length || c.r.estado === "parado"
+      ? `Posição ${c.r.estado === "parado" ? "provável" : "atual"}: <b>${posicaoProvisoria(ms)}.º</b>` : "";
+  }
+}
+
+(function tickVivo() {
+  for (const c of cartoes) if (c.r.estado === "a_correr") c.t.textContent = C.fmt(decorrido(c.r));
+  requestAnimationFrame(tickVivo);
+})();
+setInterval(atualizarPosicoes, 250);
 
 // ---------- Ecrã inteiro ----------
 const ICON_ABRIR = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>';
@@ -173,17 +247,27 @@ if (podeEcra) {
 }
 
 if (C.DEMO) {
-  window.addEventListener("storage", e => { if (e.key === C.DEMO_KEY) carregar(); });
+  window.addEventListener("storage", e => {
+    if (e.key === C.DEMO_KEY) carregar();
+    if (e.key === C.DEMO_VIVO) carregarVivo();
+  });
   setInterval(carregar, 3000);
+  setInterval(carregarVivo, 1500);
 } else {
-  // Atualização em tempo real + verificação de segurança a cada 30 s
-  C.sb.channel("tempos-" + C.PROVA)
+  // Atualização em tempo real + verificação de segurança periódica
+  C.sb.channel("crono-" + C.PROVA)
     .on("postgres_changes", { event: "*", schema: "public", table: "tempos" }, () => carregar())
+    .on("postgres_changes", { event: "*", schema: "public", table: "ao_vivo" }, () => carregarVivo())
     .subscribe();
   setInterval(carregar, 30000);
+  setInterval(carregarVivo, 15000);
+  setInterval(sincronizarRelogio, 5 * 60000);
 }
-document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") carregar(); });
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") { carregar(); carregarVivo(); }
+});
 carregar();
+sincronizarRelogio().then(carregarVivo);
 </script>
 </body>
 </html>

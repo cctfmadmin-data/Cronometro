@@ -119,7 +119,10 @@ function montar(id) {
     <div class="tempo">00:00.000</div><div class="acoes"></div>`;
   ui[id] = { el, inp: el.querySelector("input"), tempo: el.querySelector(".tempo"), acoes: el.querySelector(".acoes") };
   ui[id].inp.value = pistas[id].nome;
-  ui[id].inp.addEventListener("input", () => { pistas[id].nome = ui[id].inp.value; guardarEstado(id); });
+  ui[id].inp.addEventListener("input", () => {
+    pistas[id].nome = ui[id].inp.value; guardarEstado(id);
+    clearTimeout(ui[id].tNome); ui[id].tNome = setTimeout(() => publicarPista(id), 700);
+  });
   ui[id].inp.addEventListener("keydown", e => { if (e.key === "Enter") ui[id].inp.blur(); });
   render(id);
 }
@@ -178,7 +181,29 @@ function acao(id, a, agora) {
     limpar(id);
   } else return;
   guardarEstado(id); render(id);
+  publicarPista(id);
 }
+
+// ---------- "Em prova" ao vivo: publica o estado da pista para o ranking ----------
+function publicarPista(id) {
+  const p = pistas[id];
+  const decorrido = p.estado === "a_correr" ? Date.now() - p.inicio : p.estado === "parado" ? p.fim - p.inicio : 0;
+  const atleta = (p.nome || "").trim().replace(/\s+/g, " ");
+  const ms = Math.max(0, Math.round(decorrido));
+  if (C.DEMO) {
+    const v = C.store.get(C.DEMO_VIVO, {});
+    v[C.PROVA + "|" + id] = { prova: C.PROVA, pista: id, atleta, estado: p.estado, decorrido_ms: ms, servidor_em: new Date().toISOString() };
+    C.store.set(C.DEMO_VIVO, v);
+    return;
+  }
+  if (!pin || !navigator.onLine) return;
+  C.sb.rpc("atualizar_pista", { p_pin: pin, p_prova: C.PROVA, p_pista: id, p_atleta: atleta, p_estado: p.estado, p_decorrido_ms: ms })
+    .then(({ error }) => { if (error) console.warn("Ao vivo:", error.message); }, () => {});
+}
+function publicarTodas() { Object.keys(pistas).forEach(publicarPista); }
+// reenvia de tempos a tempos as pistas ativas (caso algum envio tenha falhado)
+setInterval(() => { for (const id in pistas) if (pistas[id].estado !== "pronto") publicarPista(id); }, 20000);
+window.addEventListener("online", publicarTodas);
 
 function limpar(id) {
   Object.assign(pistas[id], { nome: "", estado: "pronto", inicio: 0, fim: 0 });
@@ -246,6 +271,7 @@ $("fPin").addEventListener("submit", async e => {
   pin = v; C.store.set(PIN_KEY, v);
   $("ePin").textContent = ""; $("iPin").value = ""; $("ovPin").hidden = true;
   enviarFila();
+  publicarTodas();
 });
 
 // ---------- Sugestões de nomes ----------
@@ -313,7 +339,7 @@ document.addEventListener("pointerdown", manterEcra);
 // Arranque
 atualizarEstado();
 carregarNomes();
-if (!C.DEMO && !pin) pedirPin(); else enviarFila();
+if (!C.DEMO && !pin) pedirPin(); else { enviarFila(); publicarTodas(); }
 </script>
 </body>
 </html>

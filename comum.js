@@ -50,6 +50,15 @@
     return data;
   }
 
+  // Estado das pistas em tempo real ("Em prova")
+  const DEMO_VIVO = "crono_demo_aovivo";
+  async function listarAoVivo() {
+    if (DEMO) return Object.values(store.get(DEMO_VIVO, {})).filter(r => r.prova === PROVA);
+    const { data, error } = await sb.from("ao_vivo").select("*").eq("prova", PROVA);
+    if (error) throw error;
+    return data;
+  }
+
   // Melhor tempo de cada atleta (mais rápido = melhor)
   function calcularRanking(tempos) {
     const m = new Map();
@@ -69,5 +78,5 @@
     return lista;
   }
 
-  window.Crono = { cfg, PROVA, DEMO, DEMO_KEY, sb, fmt, esc, norm, store, uuid, listarTempos, calcularRanking };
+  window.Crono = { cfg, PROVA, DEMO, DEMO_KEY, DEMO_VIVO, sb, fmt, esc, norm, store, uuid, listarTempos, listarAoVivo, calcularRanking };
 })();
