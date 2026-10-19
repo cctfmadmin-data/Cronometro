@@ -9,8 +9,8 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Cronómetro">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="icon" type="image/png" href="icons/favicon-64.png">
-<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" href="favicon-64.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <title>Cronómetro · Operador</title>
 <style>
 :root{--bg:#0e1116;--card:#171b22;--line:#262c36;--txt:#e9edf2;--mut:#8a94a3;--a:#22d3ee;--b:#f59e0b;--ok:#22c55e;--stop:#ef4444}
@@ -85,6 +85,14 @@ main{flex:1;display:flex;flex-direction:column;min-height:0}
 #instTexto ol{padding-left:1.2rem;margin:.4rem 0}
 #instTexto li{margin:.3rem 0}
 #fecharInst{width:100%;margin-top:.8rem;padding:.8rem;border:0;border-radius:10px;background:var(--ok);font-weight:800;font-size:1rem}
+
+.diag{list-style:none;padding:0;margin:.4rem 0;font-size:.88rem}
+.diag li{margin:.25rem 0}
+.d-ok{color:#86efac}
+.d-ko{color:#fca5a5;font-weight:600}
+.d-nota{font-size:.82rem;opacity:.85}
+#ovInst .caixa{max-height:90vh;overflow:auto}
+.diag-tit{margin:.9rem 0 .2rem;font-size:.8rem;letter-spacing:.08em;text-transform:uppercase;opacity:.7}
 </style>
 </head>
 <body>
@@ -113,7 +121,7 @@ main{flex:1;display:flex;flex-direction:column;min-height:0}
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
     <span><b>Terminar sessão</b><small>Volta a pedir o PIN</small></span>
   </button>
-  <div class="versao">Cronómetro CCTFM · v1.1</div>
+  <div class="versao">Cronómetro CCTFM · v1.2</div>
 </nav>
 
 <div class="ov" id="ovInst" hidden>
@@ -449,6 +457,8 @@ $("mInstalar").addEventListener("click", async () => {
          <li>Escolhe <b>Instalar app</b> ou <b>Adicionar ao ecrã principal</b></li>
          <li>Confirma em <b>Instalar</b></li></ol>
        <p style="color:var(--mut);font-size:.85rem">Se a opção não aparecer, abre o link no Chrome (não dentro do WhatsApp/Facebook) e recarrega a página.</p>`;
+  $("instTexto").insertAdjacentHTML("beforeend", '<p class="diag-tit">Verificação</p><div id="diagBox"><p class="d-nota">A verificar…</p></div>');
+  C.diagnosticoInstalacao().then(h => { const b = document.getElementById("diagBox"); if (b) b.innerHTML = h; });
   $("ovInst").hidden = false;
 });
 $("fecharInst").addEventListener("click", () => $("ovInst").hidden = true);

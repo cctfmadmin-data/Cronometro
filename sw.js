@@ -1,7 +1,7 @@
 // Service worker comum às duas apps (Operador e Ranking)
 // Estratégia: rede primeiro (recebe sempre a versão mais recente),
 // cache como reserva (a app abre mesmo sem rede).
-const CACHE = "crono-v2";
+const CACHE = "crono-v3";
 const BASE = [
   "./",
   "./index.html",
@@ -10,10 +10,10 @@ const BASE = [
   "./comum.js",
   "./manifest.webmanifest",
   "./manifest-ranking.webmanifest",
-  "./icons/icon-192.png",
-  "./icons/icon-512.png",
-  "./icons/ranking-192.png",
-  "./icons/ranking-512.png",
+  "./icon-192.png",
+  "./icon-512.png",
+  "./ranking-192.png",
+  "./ranking-512.png",
   "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"
 ];
 

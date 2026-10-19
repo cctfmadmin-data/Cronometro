@@ -8,8 +8,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Ranking CCTFM">
 <link rel="manifest" href="manifest-ranking.webmanifest">
-<link rel="icon" type="image/png" href="icons/ranking-favicon-64.png">
-<link rel="apple-touch-icon" href="icons/ranking-apple-touch.png">
+<link rel="icon" type="image/png" href="ranking-favicon-64.png">
+<link rel="apple-touch-icon" href="ranking-apple-touch.png">
 <title>Ranking</title>
 <style>
 :root{--bg:#4b5320;--bg2:#3c4219;--card:rgba(0,0,0,.22);--line:rgba(255,255,255,.14);--txt:#f4f1e4;--mut:#c9c6ad;--acc:#e3cf7a;--ouro:#facc15;--prata:#e2e8f0;--bronze:#d97706;--ok:#4ade80;--erro:#f87171}
@@ -122,6 +122,14 @@ tr.novo td{animation:brilho 3s ease-out}
 #vazio{color:var(--mut);text-align:center;padding:2rem 0}
 footer{margin-top:.6rem;color:var(--mut);font-size:.75rem;text-align:center}
 @media (max-width:480px){.col-tent{display:none}}
+
+.diag{list-style:none;padding:0;margin:.4rem 0;font-size:.88rem}
+.diag li{margin:.25rem 0}
+.d-ok{color:#86efac}
+.d-ko{color:#fca5a5;font-weight:600}
+.d-nota{font-size:.82rem;opacity:.85}
+#ovInst .caixa{max-height:90vh;overflow:auto}
+.diag-tit{margin:.9rem 0 .2rem;font-size:.8rem;letter-spacing:.08em;text-transform:uppercase;opacity:.7}
 </style>
 </head>
 <body>
@@ -444,6 +452,8 @@ $("btnInstalar").addEventListener("click", async () => {
   else html = `<p>No <b>Google Chrome</b> (PC):</p><ol><li>Clica no ícone <b>Instalar</b> que aparece à direita na barra de endereço <span class="nota">(monitor com seta ⤓)</span></li><li>Ou: <b>⋮</b> → <b>Transmitir, guardar e partilhar</b> → <b>Instalar página como app…</b></li><li>Confirma em <b>Instalar</b></li></ol>`;
   html += `<p class="nota">Depois de instalada, a app abre na sua própria janela, com ícone no ambiente de trabalho / menu Iniciar.</p>`;
   $("instTexto").innerHTML = html;
+  $("instTexto").insertAdjacentHTML("beforeend", '<p class="diag-tit">Verificação</p><div id="diagBox"><p class="d-nota">A verificar…</p></div>');
+  C.diagnosticoInstalacao().then(h => { const b = document.getElementById("diagBox"); if (b) b.innerHTML = h; });
   $("ovInst").hidden = false;
 });
 $("fecharInst").addEventListener("click", () => $("ovInst").hidden = true);
