@@ -113,7 +113,7 @@ main{flex:1;display:flex;flex-direction:column;min-height:0}
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
     <span><b>Terminar sessão</b><small>Volta a pedir o PIN</small></span>
   </button>
-  <div class="versao">Cronómetro CCTFM · v1</div>
+  <div class="versao">Cronómetro CCTFM · v1.1</div>
 </nav>
 
 <div class="ov" id="ovInst" hidden>
@@ -129,7 +129,6 @@ main{flex:1;display:flex;flex-direction:column;min-height:0}
   <section class="pista" data-p="B"></section>
 </main>
 
-<datalist id="atletas"></datalist>
 
 <div class="ov" id="ovPin" hidden>
   <form class="caixa" id="fPin">
@@ -171,7 +170,7 @@ function guardarEstado(id) { C.store.set("crono_pista_" + id, pistas[id]); }
 function montar(id) {
   const el = document.querySelector(`.pista[data-p="${id}"]`);
   el.innerHTML = `<div class="topo"><span class="etq">PISTA ${id}</span>
-    <input list="atletas" placeholder="Nome do atleta" autocomplete="off" autocapitalize="words" enterkeyhint="done"></div>
+    <input type="text" name="atleta-${id}-${Date.now()}" placeholder="Nome do atleta" autocomplete="off" autocorrect="off" spellcheck="false" autocapitalize="words" enterkeyhint="done" data-lpignore="true" data-form-type="other"></div>
     <div class="tempo">00:00.000</div><div class="acoes"></div>`;
   ui[id] = { el, inp: el.querySelector("input"), tempo: el.querySelector(".tempo"), acoes: el.querySelector(".acoes") };
   ui[id].inp.value = pistas[id].nome;
@@ -227,7 +226,6 @@ function acao(id, a, agora) {
     const fila = C.store.get(FILA, []);
     fila.push({ client_id: C.uuid(), prova: C.PROVA, atleta: nome, tempo_ms });
     C.store.set(FILA, fila);
-    juntarNome(nome);
     toast(`Guardado: ${nome} — ${C.fmt(tempo_ms)}`);
     limpar(id);
     enviarFila();
@@ -330,15 +328,6 @@ $("fPin").addEventListener("submit", async e => {
   publicarTodas();
 });
 
-// ---------- Sugestões de nomes ----------
-const nomes = new Map();
-function juntarNome(n) {
-  const k = C.norm(n);
-  if (nomes.has(k)) return;
-  nomes.set(k, n);
-  const o = document.createElement("option"); o.value = n; $("atletas").appendChild(o);
-}
-async function carregarNomes() { try { (await C.listarTempos()).forEach(t => juntarNome(t.atleta)); } catch (e) {} }
 
 // ---------- Últimos registos (para corrigir enganos) ----------
 async function abrirRegistos() {
@@ -472,7 +461,6 @@ atualizarInstalar();
 
 // Arranque
 atualizarEstado();
-carregarNomes();
 if (!C.DEMO && !pin) pedirPin(); else { enviarFila(); publicarTodas(); }
 </script>
 </body>
