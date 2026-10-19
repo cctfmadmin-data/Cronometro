@@ -46,6 +46,20 @@ body.ecra .roda:hover,body.ecra .roda[aria-expanded=true]{opacity:1}
 .menu b{font-weight:600;font-size:.98rem}
 .menu small{color:var(--mut);font-size:.78rem;margin-top:.15rem}
 .menu .feito svg{color:var(--mut)}
+.menu .sep{height:1px;background:var(--line);margin:.3rem .4rem}
+.menu .perigo b{color:#fca5a5}
+.menu .perigo svg{color:#f87171}
+.titulo-perigo{color:#fca5a5}
+.lbl{display:block;font-size:.85rem;color:var(--mut);margin:.8rem 0 .3rem}
+#resetPin{width:100%;font-size:1.4rem;text-align:center;letter-spacing:.3em;padding:.55rem;border-radius:10px;border:1px solid var(--line);background:rgba(0,0,0,.3);color:var(--txt)}
+.chk{display:flex;align-items:center;gap:.5rem;margin-top:.8rem;font-size:.92rem;cursor:pointer}
+.chk input{width:18px;height:18px;accent-color:#ef4444}
+.erro{color:#fca5a5;min-height:1.2em;margin:.6rem 0 0;font-size:.9rem}
+.acoes-reset{display:flex;gap:.6rem}
+.caixa .acoes-reset button{margin-top:.6rem}
+.caixa button.sec{background:transparent;border:1px solid var(--line);color:var(--txt)}
+.caixa button.del{background:#dc2626;color:#fff}
+.caixa button.del:disabled{opacity:.4;cursor:not-allowed}
 .ov{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:1rem;z-index:30}
 .ov[hidden]{display:none}
 .caixa{background:#2f3413;border:1px solid var(--line);border-radius:16px;padding:1.3rem;width:100%;max-width:440px;box-shadow:0 20px 50px rgba(0,0,0,.5)}
@@ -147,7 +161,28 @@ footer{margin-top:.6rem;color:var(--mut);font-size:.75rem;text-align:center}
     <span><b id="instTxt">Instalar App</b><small id="instSub">Instalar neste computador ou telemóvel</small></span>
   </button>
   <button type="button" id="btnEcra"></button>
+  <div class="sep"></div>
+  <button type="button" id="btnReset" class="perigo">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M10 11v6M14 11v6"/></svg>
+    <span><b>Reset do ranking</b><small>Apagar todos os registos</small></span>
+  </button>
 </nav>
+
+<div class="ov" id="ovReset" hidden>
+  <form class="caixa" id="fReset" autocomplete="off">
+    <h2 class="titulo-perigo">⚠️ Apagar todos os registos?</h2>
+    <p>Vais apagar <b>todos os tempos</b> da prova <b id="resetProva"></b> (<b id="resetN">0</b> registos), incluindo na base de dados.</p>
+    <p><b>Esta ação não pode ser desfeita.</b></p>
+    <label class="lbl" for="resetPin">PIN do operador</label>
+    <input id="resetPin" type="password" inputmode="numeric" autocomplete="off">
+    <label class="chk"><input type="checkbox" id="resetOk"> Tenho a certeza que quero apagar tudo</label>
+    <p class="erro" id="resetErro"></p>
+    <div class="acoes-reset">
+      <button type="button" id="resetCancelar" class="sec">Cancelar</button>
+      <button type="submit" id="resetConfirmar" class="del" disabled>Sim, apagar tudo</button>
+    </div>
+  </form>
+</div>
 
 <div class="ov" id="ovInst" hidden>
   <div class="caixa">
@@ -418,6 +453,66 @@ if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
 }
 atualizarInstalar();
+
+
+// ---------- Reset do ranking (com PIN e confirmação) ----------
+function abrirReset() {
+  $("resetProva").textContent = "«" + C.PROVA + "»";
+  $("resetN").textContent = ultimosTempos.length;
+  $("resetPin").value = ""; $("resetOk").checked = false;
+  $("resetErro").textContent = ""; $("resetConfirmar").disabled = true;
+  $("resetConfirmar").textContent = "Sim, apagar tudo";
+  $("resetPin").parentNode.querySelector(".lbl").hidden = C.DEMO; $("resetPin").hidden = C.DEMO;
+  $("ovReset").hidden = false;
+  setTimeout(() => (C.DEMO ? $("resetOk") : $("resetPin")).focus(), 50);
+}
+function validarReset() {
+  $("resetConfirmar").disabled = !($("resetOk").checked && (C.DEMO || $("resetPin").value.trim()));
+}
+$("btnReset").addEventListener("click", abrirReset);
+$("resetPin").addEventListener("input", validarReset);
+$("resetOk").addEventListener("change", validarReset);
+$("resetCancelar").addEventListener("click", () => $("ovReset").hidden = true);
+$("ovReset").addEventListener("click", e => { if (e.target === $("ovReset")) $("ovReset").hidden = true; });
+$("fReset").addEventListener("submit", async e => {
+  e.preventDefault();
+  if ($("resetConfirmar").disabled) return;
+  $("resetConfirmar").disabled = true;
+  $("resetConfirmar").textContent = "A apagar…";
+  $("resetErro").textContent = "";
+  try {
+    let n;
+    if (C.DEMO) {
+      n = ultimosTempos.length;
+      C.store.set(C.DEMO_KEY, C.store.get(C.DEMO_KEY, []).filter(t => t.prova !== C.PROVA));
+      const v = C.store.get(C.DEMO_VIVO, {});
+      for (const k in v) if (v[k].prova === C.PROVA) delete v[k];
+      C.store.set(C.DEMO_VIVO, v);
+    } else {
+      const { data, error } = await C.sb.rpc("reset_ranking", { p_pin: $("resetPin").value.trim(), p_prova: C.PROVA });
+      if (error) throw error;
+      n = data;
+    }
+    $("ovReset").hidden = true;
+    ultimosTempos = []; anterior = new Map(); desenhar();
+    await carregar(); await carregarVivo();
+    alertaRapido(`Ranking reposto a zero · ${n} registo(s) apagado(s)`);
+  } catch (err) {
+    const msg = String((err && err.message) || err);
+    $("resetErro").textContent = /PIN/i.test(msg) ? "PIN incorreto."
+      : /reset_ranking|function/i.test(msg) ? "Falta correr o ficheiro supabase-reset.sql no Supabase."
+      : "Não foi possível apagar: " + msg;
+    $("resetConfirmar").textContent = "Sim, apagar tudo";
+    validarReset();
+  }
+});
+function alertaRapido(txt) {
+  const d = document.createElement("div");
+  d.textContent = txt;
+  d.style.cssText = "position:fixed;left:50%;bottom:1.2rem;transform:translateX(-50%);background:#f4f1e4;color:#2b300f;padding:.75rem 1.1rem;border-radius:12px;font-weight:700;z-index:40;box-shadow:0 8px 24px rgba(0,0,0,.35)";
+  document.body.appendChild(d);
+  setTimeout(() => d.remove(), 3500);
+}
 
 if (C.DEMO) {
   window.addEventListener("storage", e => {
