@@ -103,6 +103,8 @@ tr.p3 .pos span{background:var(--bronze);color:#111}
 tr.novo td{animation:brilho 3s ease-out}
 #procura::placeholder{color:var(--mut)}
 @keyframes brilho{0%{background:rgba(227,207,122,.45)}100%{background:transparent}}
+.auto-info{margin-left:.6rem;padding:.1rem .5rem;border:1px solid var(--line);border-radius:999px;white-space:nowrap}
+.auto-info:empty{display:none}
 #vazio{color:var(--mut);text-align:center;padding:2rem 0}
 footer{margin-top:.6rem;color:var(--mut);font-size:.75rem;text-align:center}
 @media (max-width:480px){.col-tent{display:none}}
@@ -128,7 +130,7 @@ footer{margin-top:.6rem;color:var(--mut);font-size:.75rem;text-align:center}
   <section class="aovivo" id="aoVivo"></section>
   <input id="procura" type="search" placeholder="Procurar atleta…" autocomplete="off">
 
-  <div class="lista">
+  <div class="lista" id="lista">
   <table>
     <thead><tr><th class="pos">#</th><th>Atleta</th><th class="num">Tempo</th><th class="num">Dif.</th><th class="num col-tent">Tent.</th></tr></thead>
     <tbody id="corpo"></tbody>
@@ -136,7 +138,7 @@ footer{margin-top:.6rem;color:var(--mut);font-size:.75rem;text-align:center}
   <p id="vazio" hidden>Ainda não há tempos registados.</p>
   </div>
 
-  <footer>Melhor tempo de cada atleta · mais rápido = melhor · atualizado às <span id="hora">—</span></footer>
+  <footer>Melhor tempo de cada atleta · mais rápido = melhor · atualizado às <span id="hora">—</span><span id="autoInfo" class="auto-info"></span></footer>
 </div>
 
 <nav class="menu" id="menu" hidden>
@@ -203,6 +205,60 @@ function vivo(ok) {
 }
 
 $("procura").addEventListener("input", desenhar);
+
+// ---------- Scroll automático da lista (top 30, vai e volta) ----------
+const AUTO = {
+  limite: 30,        // percorre só até ao 30.º classificado
+  velocidade: 28,    // píxeis por segundo
+  pausaFim: 3000,    // pausa no topo e no 30.º (ms)
+  retomar: 2000      // espera depois de o rato sair da lista (ms)
+};
+const lista = $("lista");
+let autoDir = 1, autoPos = 0, autoEspera = performance.now() + AUTO.pausaFim, autoUlt = 0;
+let ratoDentro = false, toqueAte = 0, retomarEm = 0;
+
+function limiteScroll() {
+  const linhas = $("corpo").rows;
+  if (!linhas.length) return 0;
+  const alvo = linhas[Math.min(AUTO.limite, linhas.length) - 1];
+  const fundo = alvo.getBoundingClientRect().bottom - lista.getBoundingClientRect().top + lista.scrollTop;
+  return Math.max(0, Math.min(fundo - lista.clientHeight, lista.scrollHeight - lista.clientHeight));
+}
+function autoAtivo(agora) {
+  return !ratoDentro && agora >= toqueAte && agora >= retomarEm && !$("procura").value.trim();
+}
+function mostrarEstadoAuto(txt) { if ($("autoInfo").textContent !== txt) $("autoInfo").textContent = txt; }
+
+function passoAuto(agora) {
+  const dt = autoUlt ? Math.min(agora - autoUlt, 100) : 0;
+  autoUlt = agora;
+  const max = limiteScroll();
+  if (max < 2) { mostrarEstadoAuto(""); requestAnimationFrame(passoAuto); return; }
+  if (!autoAtivo(agora)) {
+    autoPos = lista.scrollTop;              // continua de onde o utilizador deixou
+    mostrarEstadoAuto("⏸ scroll automático em pausa");
+    requestAnimationFrame(passoAuto); return;
+  }
+  mostrarEstadoAuto(autoDir > 0 ? "▼ scroll automático" : "▲ scroll automático");
+  if (agora < autoEspera) { requestAnimationFrame(passoAuto); return; }
+  // se ficou abaixo do 30.º (scroll manual), sobe suavemente e mais depressa até lá
+  const foraDoTop = autoPos > max;
+  if (foraDoTop) autoDir = -1;
+  autoPos += autoDir * AUTO.velocidade * (foraDoTop ? 6 : 1) * dt / 1000;
+  if (autoDir > 0 && autoPos >= max) { autoPos = max; autoDir = -1; autoEspera = agora + AUTO.pausaFim; }
+  if (autoPos <= 0)   { autoPos = 0;   autoDir = 1;  autoEspera = agora + AUTO.pausaFim; }
+  lista.scrollTop = autoPos;
+  requestAnimationFrame(passoAuto);
+}
+
+// Rato dentro da lista → pausa; ao sair, retoma passados 2 s
+lista.addEventListener("mouseenter", () => { ratoDentro = true; });
+lista.addEventListener("mouseleave", () => { ratoDentro = false; retomarEm = performance.now() + AUTO.retomar; });
+// Ecrãs táteis: pausa enquanto se mexe e retoma 8 s depois de largar
+lista.addEventListener("touchstart", () => { toqueAte = Infinity; }, { passive: true });
+lista.addEventListener("touchend", () => { toqueAte = performance.now() + 8000; }, { passive: true });
+requestAnimationFrame(passoAuto);
+
 
 // ---------- EM PROVA (tempo real) ----------
 let emProva = [], desvio = 0, aCarregarVivo = false, cartoes = [];
