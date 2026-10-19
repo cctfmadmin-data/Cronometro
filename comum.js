@@ -78,5 +78,38 @@
     return lista;
   }
 
-  window.Crono = { cfg, PROVA, DEMO, DEMO_KEY, DEMO_VIVO, sb, fmt, esc, norm, store, uuid, listarTempos, listarAoVivo, calcularRanking };
+  // Verifica os requisitos para o browser permitir "Instalar app" (e não só atalho)
+  async function diagnosticoInstalacao() {
+    const L = [];
+    const ok = (bom, txt) => L.push(`<li class="${bom ? "d-ok" : "d-ko"}">${bom ? "✔" : "✖"} ${txt}</li>`);
+    const ua = navigator.userAgent;
+    const inApp = /; wv\)|FBAN|FBAV|Instagram|WhatsApp|Line\//i.test(ua);
+    const chrome = /Chrome\//.test(ua) && !/SamsungBrowser|Firefox|OPR\//.test(ua);
+    ok(location.protocol === "https:" || location.hostname === "localhost", "Ligação segura (https)");
+    ok(!inApp, inApp ? "Aberto dentro de outra app (WhatsApp/Facebook…) — abre no Chrome" : "Aberto num browser normal");
+    ok(chrome || /Edg\//.test(ua), chrome ? "Browser: Chrome" : "Browser: não é o Chrome (no Android usa o Chrome)");
+    const link = document.querySelector('link[rel="manifest"]');
+    let man = null;
+    try {
+      const r = await fetch(link.href, { cache: "no-store" });
+      man = r.ok ? await r.json() : null;
+      ok(!!man, man ? "Manifesto encontrado" : `Manifesto em falta (${r.status}) — carrega o ${link.getAttribute("href")}`);
+    } catch (e) { ok(false, "Manifesto inválido ou em falta"); }
+    if (man && man.icons) {
+      for (const ic of man.icons) {
+        let st = 0;
+        try { st = (await fetch(new URL(ic.src, link.href), { cache: "no-store" })).status; } catch (e) {}
+        ok(st === 200, st === 200 ? `Ícone ${ic.src}` : `Ícone em falta: ${ic.src} — carrega este ficheiro no GitHub`);
+      }
+    }
+    let sw = false;
+    try { sw = !!(navigator.serviceWorker && (await navigator.serviceWorker.getRegistration())); } catch (e) {}
+    ok(sw, sw ? "Service worker ativo" : "Service worker em falta — carrega o sw.js e recarrega a página");
+    const tudoOk = !L.some(x => x.includes("d-ko"));
+    return `<ul class="diag">${L.join("")}</ul>` + (tudoOk
+      ? `<p class="d-nota">Está tudo certo. Se o Chrome ainda só oferecer atalho: fecha a página, abre-a de novo, espera 30 s e tenta outra vez. Se já tinhas criado um atalho, apaga-o primeiro.</p>`
+      : `<p class="d-nota">Corrige os pontos com ✖ e recarrega a página.</p>`);
+  }
+
+  window.Crono = { cfg, PROVA, DEMO, DEMO_KEY, DEMO_VIVO, sb, fmt, esc, norm, store, uuid, listarTempos, listarAoVivo, calcularRanking, diagnosticoInstalacao };
 })();
