@@ -2,17 +2,32 @@
   "name": "Ranking CCTFM · Prontidão Física",
   "short_name": "Ranking CCTFM",
   "description": "Classificação em tempo real — Centro de Competências de Treino Físico Militar",
-  "id": "./",
-  "start_url": "./",
-  "scope": "./",
+  "id": "./tv",
+  "start_url": "./tv",
+  "scope": "./tv",
   "display": "standalone",
   "orientation": "any",
   "background_color": "#3c4219",
   "theme_color": "#4b5320",
   "lang": "pt-PT",
   "icons": [
-    { "src": "ranking-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "ranking-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
-    { "src": "ranking-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    {
+      "src": "ranking-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "ranking-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "ranking-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
   ]
 }

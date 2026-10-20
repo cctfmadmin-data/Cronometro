@@ -1,7 +1,7 @@
 // Service worker comum às duas apps (Operador e Ranking)
 // Estratégia: rede primeiro (recebe sempre a versão mais recente),
 // cache como reserva (a app abre mesmo sem rede).
-const CACHE = "crono-v3";
+const CACHE = "crono-v4";
 const BASE = [
   "./",
   "./index.html",
@@ -54,7 +54,7 @@ self.addEventListener("fetch", e => {
       .catch(() =>
         caches.match(req, { ignoreSearch: true }).then(r => {
           if (r || req.mode !== "navigate") return r;
-          return caches.match(url.pathname.includes("operador") ? "./operador.html" : "./");
+          return caches.match(url.pathname.includes("operador") ? "./operador.html" : "./index.html");
         })
       )
   );
